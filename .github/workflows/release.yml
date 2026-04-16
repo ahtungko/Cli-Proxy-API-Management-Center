@@ -2,13 +2,15 @@ name: Build and Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
-
     permissions:
       contents: write
 
@@ -19,46 +21,49 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Calculate Version
+        id: versioning
+        run: |
+          # Get latest tag
+          latest_tag=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || echo "v0.0.0")
+          
+          # If it's a tag push, use it. If it's a sync (push to main) or manual, increment.
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            new_tag="${{ github.ref_name }}"
+          else
+            version=$(echo ${latest_tag:-v0.0.0} | sed 's/v//')
+            major=$(echo $version | cut -d. -f1)
+            minor=$(echo $version | cut -d. -f2)
+            patch=$(echo $version | cut -d. -f3)
+            new_tag="v$major.$minor.$((patch + 1))"
+          fi
+          
+          echo "tag=$new_tag" >> $GITHUB_OUTPUT
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build all-in-one HTML
-        run: npm run build
+      - name: Install and Build
+        run: |
+          npm ci
+          npm run build
         env:
-          VERSION: ${{ github.ref_name }}
+          VERSION: ${{ steps.versioning.outputs.tag }}
 
-      - name: Prepare release assets
+      - name: Prepare Assets
         run: |
           cd dist
           mv index.html management.html
-          ls -lh management.html
-
-      - name: Generate release notes
-        run: |
-          set -euo pipefail
-          current_tag="${GITHUB_REF_NAME}"
-          previous_tag="$(git tag --list 'v*' --sort=-v:refname | grep -v "^${current_tag}$" | head -n 1 || true)"
-          if [ -n "${previous_tag}" ]; then
-            range="${previous_tag}..${current_tag}"
-          else
-            range="${current_tag}"
-          fi
-
-          : > release-notes.md
-          git log --pretty=format:"- %h %s" "${range}" >> release-notes.md
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.versioning.outputs.tag }}
           files: dist/management.html
-          body_path: release-notes.md
-          draft: false
-          prerelease: false
+          generate_release_notes: true # GitHub will auto-generate notes for you
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
