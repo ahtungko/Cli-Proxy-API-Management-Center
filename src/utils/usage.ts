@@ -289,7 +289,7 @@ const fnv1a64Hex = (value: string): string => {
   return hex;
 };
 
-const looksLikeRawSecret = (text: string): boolean => {
+export const looksLikeRawSecret = (text: string): boolean => {
   if (!text || /\s/.test(text)) return false;
 
   const lower = text.toLowerCase();
@@ -382,6 +382,12 @@ export function buildCandidateUsageSourceIds(input: {
     result.push(normalizeUsageSourceId(apiKey));
     result.push(`${USAGE_SOURCE_PREFIX_KEY}${fnv1a64Hex(apiKey)}`);
     result.push(`${USAGE_SOURCE_PREFIX_MASKED}${maskApiKey(apiKey)}`);
+    // 补充：apiKey 经 normalizeUsageSourceId 处理后可能产生不同格式（如 t:xxx），
+    // 确保与后端 collectUsageDetails 中 detail.source 的 normalize 结果一致
+    const normalized = normalizeUsageSourceId(apiKey);
+    if (normalized) {
+      result.push(normalized);
+    }
   }
 
   return Array.from(new Set(result));
@@ -1240,10 +1246,10 @@ export interface ChartData {
 }
 
 const CHART_COLORS = [
-  { borderColor: '#8b8680', backgroundColor: 'rgba(139, 134, 128, 0.15)' },
+  { borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)' },
   { borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.15)' },
   { borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.15)' },
-  { borderColor: '#c65746', backgroundColor: 'rgba(198, 87, 70, 0.15)' },
+  { borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.15)' },
   { borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.15)' },
   { borderColor: '#06b6d4', backgroundColor: 'rgba(6, 182, 212, 0.15)' },
   { borderColor: '#ec4899', backgroundColor: 'rgba(236, 72, 153, 0.15)' },

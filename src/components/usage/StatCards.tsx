@@ -135,9 +135,9 @@ export function StatCards({ usage, loading, modelPrices, nowMs, sparklines }: St
       key: 'requests',
       label: t('usage_stats.total_requests'),
       icon: <IconSatellite size={16} />,
-      accent: '#8b8680',
-      accentSoft: 'rgba(139, 134, 128, 0.18)',
-      accentBorder: 'rgba(139, 134, 128, 0.35)',
+      accent: '#3b82f6',
+      accentSoft: 'rgba(59, 130, 246, 0.18)',
+      accentBorder: 'rgba(59, 130, 246, 0.35)',
       value: loading ? '-' : (usage?.total_requests ?? 0).toLocaleString(),
       meta: (
         <>
@@ -146,7 +146,7 @@ export function StatCards({ usage, loading, modelPrices, nowMs, sparklines }: St
             {t('usage_stats.success_requests')}: {loading ? '-' : (usage?.success_count ?? 0)}
           </span>
           <span className={styles.statMetaItem}>
-            <span className={styles.statMetaDot} style={{ backgroundColor: '#c65746' }} />
+            <span className={styles.statMetaDot} style={{ backgroundColor: '#ef4444' }} />
             {t('usage_stats.failed_requests')}: {loading ? '-' : (usage?.failure_count ?? 0)}
           </span>
           {latencyStats.sampleCount > 0 && (

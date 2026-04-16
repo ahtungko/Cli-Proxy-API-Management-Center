@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type RefObject } from 'react';
+import {
+  createElement,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type RefObject,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
@@ -29,6 +37,7 @@ export type UseAuthFilesDataResult = {
   uploading: boolean;
   deleting: string | null;
   deletingAll: boolean;
+  cleaningInvalid401: boolean;
   statusUpdating: Record<string, boolean>;
   batchStatusUpdating: boolean;
   fileInputRef: RefObject<HTMLInputElement | null>;
@@ -37,6 +46,7 @@ export type UseAuthFilesDataResult = {
   handleFileChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleDelete: (name: string) => void;
   handleDeleteAll: (options: DeleteAllOptions) => void;
+  handleCleanInvalidCodex401: () => void;
   handleDownload: (name: string) => Promise<void>;
   handleStatusToggle: (item: AuthFileItem, enabled: boolean) => Promise<void>;
   toggleSelect: (name: string) => void;
@@ -63,6 +73,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [cleaningInvalid401, setCleaningInvalid401] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
@@ -118,13 +129,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
   }, []);
 
   const applyDeletedFiles = useCallback((names: string[]) => {
-    const deletedNames = Array.from(
-      new Set(
-        names
-          .map((name) => name.trim())
-          .filter(Boolean)
-      )
-    );
+    const deletedNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)));
     if (deletedNames.length === 0) return;
 
     const deletedSet = new Set(deletedNames);
@@ -232,9 +237,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
         }
 
         if (result.failed.length > 0) {
-          const details = result.failed
-            .map((item) => `${item.name}: ${item.error}`)
-            .join('; ');
+          const details = result.failed.map((item) => `${item.name}: ${item.error}`).join('; ');
           showNotification(`${t('notification.upload_failed')}: ${details}`, 'error');
         }
       } catch (err: unknown) {
@@ -319,9 +322,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
                 return;
               }
 
-              const result = await authFilesApi.deleteFiles(
-                filesToDelete.map((file) => file.name)
-              );
+              const result = await authFilesApi.deleteFiles(filesToDelete.map((file) => file.name));
               const success = result.deleted;
               const failed = result.failed.length;
 
@@ -378,6 +379,121 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
     },
     [applyDeletedFiles, deselectAll, files, showConfirmation, showNotification, t]
   );
+
+  const handleCleanInvalidCodex401 = useCallback(() => {
+    if (cleaningInvalid401) return;
+
+    setCleaningInvalid401(true);
+    void (async () => {
+      try {
+        showNotification(t('auth_files.clean_401_scanning'), 'info');
+
+        const summary = await authFilesApi.detectInvalidCodexAccounts({ items: files });
+        const invalidNames = summary.invalidNames;
+
+        if (summary.totalFiles === 0) {
+          showNotification(t('auth_files.clean_401_no_codex'), 'info');
+          return;
+        }
+
+        if (invalidNames.length === 0) {
+          showNotification(t('auth_files.clean_401_none'), 'success');
+          return;
+        }
+
+        const previewCount = invalidNames.length;
+        const listItems = invalidNames.map((name) =>
+          createElement('li', { key: name, style: { wordBreak: 'break-all' } }, name)
+        );
+
+        showConfirmation({
+          title: t('auth_files.clean_401_confirm_title'),
+          message: createElement(
+            'div',
+            {
+              style: {
+                display: 'grid',
+                gap: '0.75rem',
+              },
+            },
+            createElement(
+              'p',
+              { style: { margin: 0 } },
+              t('auth_files.clean_401_confirm_message', {
+                count: previewCount,
+                total: summary.totalFiles,
+              })
+            ),
+            createElement(
+              'div',
+              {
+                style: {
+                  maxHeight: '240px',
+                  overflowY: 'auto',
+                  padding: '0.75rem',
+                  borderRadius: '0.75rem',
+                  border: '1px solid var(--border-primary)',
+                  background: 'var(--bg-tertiary)',
+                },
+              },
+              createElement(
+                'ul',
+                {
+                  style: {
+                    margin: 0,
+                    paddingInlineStart: '1.25rem',
+                    display: 'grid',
+                    gap: '0.35rem',
+                  },
+                },
+                ...listItems
+              )
+            )
+          ),
+          variant: 'danger',
+          confirmText: t('common.delete'),
+          onConfirm: async () => {
+            const result = await authFilesApi.deleteFiles(invalidNames);
+            applyDeletedFiles(result.files);
+
+            if (result.deleted > 0) {
+              deselectAll();
+              await refreshKeyStats();
+            }
+
+            if (result.failed.length === 0) {
+              showNotification(
+                t('auth_files.clean_401_delete_success', { count: result.deleted }),
+                'success'
+              );
+            } else {
+              showNotification(
+                t('auth_files.clean_401_delete_partial', {
+                  success: result.deleted,
+                  failed: result.failed.length,
+                }),
+                'warning'
+              );
+            }
+          },
+        });
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        showNotification(t('auth_files.clean_401_failed', { message: errorMessage }), 'error');
+      } finally {
+        setCleaningInvalid401(false);
+      }
+    })();
+  }, [
+    applyDeletedFiles,
+    cleaningInvalid401,
+    deselectAll,
+    files,
+    refreshKeyStats,
+    showConfirmation,
+    showNotification,
+    t,
+  ]);
 
   const handleDownload = useCallback(
     async (name: string) => {
@@ -503,7 +619,10 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
         );
 
         if (failCount === 0) {
-          showNotification(t('auth_files.batch_status_success', { count: successCount }), 'success');
+          showNotification(
+            t('auth_files.batch_status_success', { count: successCount }),
+            'success'
+          );
         } else {
           showNotification(
             t('auth_files.batch_status_partial', { success: successCount, failed: failCount }),
@@ -613,6 +732,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
     uploading,
     deleting,
     deletingAll,
+    cleaningInvalid401,
     statusUpdating,
     batchStatusUpdating,
     fileInputRef,
@@ -621,6 +741,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
     handleFileChange,
     handleDelete,
     handleDeleteAll,
+    handleCleanInvalidCodex401,
     handleDownload,
     handleStatusToggle,
     toggleSelect,
