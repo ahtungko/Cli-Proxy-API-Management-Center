@@ -12,7 +12,9 @@
 body {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
-  transition: background-color $transition-normal, color $transition-normal;
+  transition:
+    background-color $transition-normal,
+    color $transition-normal;
 }
 
 html.modal-open,
@@ -49,6 +51,20 @@ body.modal-open .content {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 $spacing-md;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.page {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.page-header {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .flex-center {

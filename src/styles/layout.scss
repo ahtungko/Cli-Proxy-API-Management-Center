@@ -27,6 +27,7 @@
   justify-content: space-between;
   gap: $spacing-md;
   padding: $spacing-md $spacing-lg;
+  box-sizing: border-box;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
@@ -589,7 +590,8 @@
   height: 100%;
 
   &.content-logs {
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 
     @media (max-width: $breakpoint-mobile) {
       overflow: visible;
@@ -601,7 +603,10 @@
 
 .main-content {
   flex: 1 0 auto;
-  padding: $spacing-lg;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: clamp(12px, 2vw, 24px);
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
@@ -610,7 +615,7 @@
   &.main-content-logs {
     flex: 1 1 auto;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
 
     @media (max-width: $breakpoint-mobile) {
       flex: 0 0 auto;

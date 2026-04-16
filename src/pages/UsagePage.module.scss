@@ -46,6 +46,11 @@
 
 .timeRangeSelectControl {
   min-width: 164px;
+
+  @include mobile {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .pageTitle {

@@ -2,29 +2,41 @@
 
 .container {
   width: 100%;
+  height: 100%;
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  gap: $spacing-md;
 
   @include mobile {
+    height: auto;
     min-height: auto;
     overflow: visible;
   }
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  flex-wrap: wrap;
 }
 
 .pageTitle {
   font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 $spacing-lg 0;
+  margin: 0;
 }
 
 .tabBar {
   display: flex;
   gap: $spacing-xs;
-  margin-bottom: $spacing-lg;
   border-bottom: 1px solid var(--border-color);
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .tabItem {
@@ -60,7 +72,7 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: $spacing-md;
   flex: 1;
   min-height: 0;
 
@@ -71,6 +83,11 @@
 }
 
 .logCard {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  box-shadow: var(--shadow);
+  padding: $spacing-md;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -82,6 +99,48 @@
     min-height: auto;
     overflow: visible;
   }
+}
+
+.logControls {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  flex: 0 0 auto;
+  padding-bottom: $spacing-sm;
+  background: var(--bg-primary);
+}
+
+.logBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: $spacing-sm;
+}
+
+.errorCard {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-lg;
+  box-shadow: var(--shadow);
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.errorCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.errorCardTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .toolbar {
@@ -100,10 +159,13 @@
 
 .filters {
   display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  flex-wrap: wrap;
-  margin-bottom: $spacing-md;
+  flex-direction: column;
+  align-items: stretch;
+  gap: $spacing-sm;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--bg-secondary) 68%, transparent);
 
   :global(.form-group) {
     margin: 0;
@@ -115,16 +177,44 @@
   }
 }
 
+.filterPrimary {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.filterSecondary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.toggleStrip {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
 .searchWrapper {
   flex: 1;
-  min-width: 220px;
-  max-width: 420px;
+  min-width: 0;
+  max-width: 520px;
+
+  @include mobile {
+    max-width: 100%;
+    width: 100%;
+  }
 }
 
 .filterPanelHeader {
   display: flex;
   align-items: center;
-  flex: 1 1 100%;
+  flex: 0 0 auto;
 }
 
 .filterPanelToggle {
@@ -157,6 +247,8 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
+  max-height: min(34vh, 260px);
+  overflow: auto;
 }
 
 .filterChipGroup {
@@ -229,6 +321,7 @@
 @include mobile {
   .filterPanelHeader {
     width: 100%;
+    flex: 1 1 100%;
   }
 
   .filterPanelToggle {
@@ -249,6 +342,12 @@
   .filterChipLabel {
     min-width: 0;
     line-height: 1.2;
+  }
+
+  .filterPrimary,
+  .filterSecondary,
+  .toggleStrip {
+    width: 100%;
   }
 }
 
@@ -319,8 +418,9 @@
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
   flex: 1 1 auto;
-  min-height: 280px;
-  max-height: calc(100vh - 320px);
+  min-height: 0;
+  height: 100%;
+  max-height: none;
   overflow: auto;
   position: relative;
   -webkit-overflow-scrolling: touch;
@@ -328,13 +428,12 @@
   overscroll-behavior: contain;
 
   @include tablet {
-    min-height: 240px;
-    max-height: calc(100vh - 300px);
+    min-height: 0;
   }
 
   @include mobile {
-    min-height: 360px;
-    max-height: 480px;
+    min-height: 58vh;
+    height: auto;
     flex: 0 0 auto;
     overflow: auto;
   }
@@ -520,8 +619,9 @@
 }
 
 .requestIdBadge {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-    'Courier New', monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
   font-size: 11px;
   color: #0891b2;
   background: rgba(8, 145, 178, 0.1);
@@ -764,11 +864,6 @@
 @media (max-height: 820px) {
   .pageTitle {
     font-size: 24px;
-    margin-bottom: $spacing-md;
-  }
-
-  .tabBar {
-    margin-bottom: $spacing-md;
   }
 
   .tabItem {
@@ -776,16 +871,15 @@
   }
 
   .content {
-    gap: $spacing-md;
+    gap: $spacing-sm;
   }
 
   .logCard {
-    padding: $spacing-md;
+    padding: $spacing-sm;
   }
 
   .logPanel {
     min-height: 200px;
-    max-height: calc(100vh - 280px);
   }
 
   .logRow {
@@ -801,11 +895,6 @@
 @media (max-height: 600px) {
   .pageTitle {
     font-size: 20px;
-    margin-bottom: $spacing-sm;
-  }
-
-  .tabBar {
-    margin-bottom: $spacing-sm;
   }
 
   .tabItem {
@@ -814,7 +903,7 @@
   }
 
   .content {
-    gap: $spacing-sm;
+    gap: 8px;
   }
 
   .filters {
@@ -828,7 +917,6 @@
 
   .logPanel {
     min-height: 160px;
-    max-height: calc(100vh - 220px);
   }
 
   .logRow {

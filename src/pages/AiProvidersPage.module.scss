@@ -34,7 +34,7 @@
 
 .searchBox {
   flex: 0 1 320px;
-  min-width: 200px;
+  min-width: 0;
 
   @include mobile {
     flex: 1 1 100%;
@@ -101,7 +101,7 @@
 .providerList {
   display: grid;
   gap: $spacing-md;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
 
   @include mobile {
     grid-template-columns: 1fr;

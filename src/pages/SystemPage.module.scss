@@ -160,6 +160,9 @@
   .infoRow {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
     padding: $spacing-sm $spacing-md;
     background-color: var(--bg-secondary);
     border-radius: $radius-md;
@@ -167,11 +170,15 @@
     .label {
       font-weight: 500;
       color: var(--text-secondary);
+      min-width: 0;
     }
 
     .value {
       color: var(--text-primary);
       font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      min-width: 0;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
   }
 }
