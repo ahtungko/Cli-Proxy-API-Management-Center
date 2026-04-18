@@ -6,6 +6,7 @@ import { apiClient } from './client';
 import { apiCallApi } from './apiCall';
 import type { AuthFilesResponse } from '@/types/authFile';
 import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
+import { parseTimestampMs } from '@/utils/timestamp';
 import {
   CODEX_REQUEST_HEADERS,
   CODEX_USAGE_URL,
@@ -212,7 +213,7 @@ const readDateField = (entry: AuthFileEntry): number => {
       if (Number.isFinite(asNumber)) {
         return asNumber < 1e12 ? asNumber * 1000 : asNumber;
       }
-      const parsed = Date.parse(trimmed);
+      const parsed = parseTimestampMs(trimmed);
       if (!Number.isNaN(parsed)) {
         return parsed;
       }
