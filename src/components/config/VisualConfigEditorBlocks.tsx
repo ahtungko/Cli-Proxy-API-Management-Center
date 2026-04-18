@@ -1,4 +1,4 @@
-import { memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -22,6 +22,15 @@ import {
 } from '@/hooks/useVisualConfig';
 import { maskApiKey } from '@/utils/format';
 import { isValidApiKeyCharset } from '@/utils/validation';
+import {
+  getApiKeyNote,
+  setApiKeyNote,
+  deleteApiKeyNote,
+  exportApiKeyNotes,
+  importApiKeyNotes,
+  generateRowId,
+  syncApiKeyRows,
+} from '@/utils/apiKeyNotes';
 
 /** Minimum character count before the expand/collapse toggle appears. */
 const EXPAND_THRESHOLD = 30;
@@ -177,23 +186,47 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
         .filter(Boolean),
     [value]
   );
-  const [apiKeyIds, setApiKeyIds] = useState(() => apiKeys.map(() => makeClientId()));
-  const renderApiKeyIds = useMemo(() => {
-    if (apiKeyIds.length === apiKeys.length) return apiKeyIds;
-    if (apiKeyIds.length > apiKeys.length) return apiKeyIds.slice(0, apiKeys.length);
-    return [
-      ...apiKeyIds,
-      ...Array.from({ length: apiKeys.length - apiKeyIds.length }, () => makeClientId()),
-    ];
-  }, [apiKeyIds, apiKeys.length]);
+  const [apiKeyIds, setApiKeyIds] = useState<string[]>([]);
+  const renderApiKeyIds = useMemo(
+    () => apiKeys.map((_, index) => apiKeyIds[index] ?? `api-key-row-${index}`),
+    [apiKeyIds, apiKeys]
+  );
+  const hasStableApiKeyIds = apiKeyIds.length === apiKeys.length;
 
   const apiKeyInputId = useId();
   const apiKeyHintId = `${apiKeyInputId}-hint`;
   const apiKeyErrorId = `${apiKeyInputId}-error`;
   const [modalOpen, setModalOpen] = useState(false);
   const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number>(-1);
   const [inputValue, setInputValue] = useState('');
+  const [noteValue, setNoteValue] = useState('');
   const [formError, setFormError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void syncApiKeyRows(apiKeys)
+      .then((rowIds) => {
+        if (!cancelled) {
+          setApiKeyIds(rowIds);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to sync API key row IDs:', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiKeys]);
+
+  const ensureStableApiKeyIds = useCallback(async () => {
+    if (apiKeyIds.length === apiKeys.length) return apiKeyIds;
+    const rowIds = await syncApiKeyRows(apiKeys);
+    setApiKeyIds(rowIds);
+    return rowIds;
+  }, [apiKeyIds, apiKeys]);
 
   function generateSecureApiKey(): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -204,15 +237,21 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
 
   const openAddModal = () => {
     setEditingApiKeyId(null);
+    setEditingIndex(-1);
     setInputValue('');
+    setNoteValue('');
     setFormError('');
     setModalOpen(true);
   };
 
   const openEditModal = (apiKeyId: string) => {
-    const editingIndex = renderApiKeyIds.findIndex((id) => id === apiKeyId);
+    const index = renderApiKeyIds.findIndex((id) => id === apiKeyId);
+    if (index < 0 || !hasStableApiKeyIds) return;
+    const currentKey = apiKeys[index] ?? '';
     setEditingApiKeyId(apiKeyId);
-    setInputValue(apiKeys[editingIndex] ?? '');
+    setEditingIndex(index);
+    setInputValue(currentKey);
+    setNoteValue(getApiKeyNote(apiKeyId)); // Use rowId to get note
     setFormError('');
     setModalOpen(true);
   };
@@ -220,7 +259,9 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const closeModal = () => {
     setModalOpen(false);
     setInputValue('');
+    setNoteValue('');
     setEditingApiKeyId(null);
+    setEditingIndex(-1);
     setFormError('');
   };
 
@@ -230,12 +271,13 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
 
   const handleDelete = (apiKeyId: string) => {
     const index = renderApiKeyIds.findIndex((id) => id === apiKeyId);
-    if (index < 0) return;
+    if (index < 0 || !hasStableApiKeyIds) return;
+    deleteApiKeyNote(apiKeyId);
     setApiKeyIds(renderApiKeyIds.filter((id) => id !== apiKeyId));
     updateApiKeys(apiKeys.filter((_, i) => i !== index));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmed = inputValue.trim();
     if (!trimmed) {
       setFormError(t('config_management.visual.api_keys.error_empty'));
@@ -246,17 +288,18 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       return;
     }
 
-    const editingIndex = editingApiKeyId
-      ? renderApiKeyIds.findIndex((id) => id === editingApiKeyId)
-      : -1;
-    const nextKeys =
-      editingApiKeyId === null
-        ? [...apiKeys, trimmed]
-        : apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key));
     if (editingApiKeyId === null) {
-      setApiKeyIds([...renderApiKeyIds, makeClientId()]);
+      const stableRowIds = await ensureStableApiKeyIds();
+      const newRowId = generateRowId();
+      await setApiKeyNote(newRowId, trimmed, noteValue);
+      setApiKeyIds([...stableRowIds, newRowId]);
+      updateApiKeys([...apiKeys, trimmed]);
+    } else {
+      const nextKeys = apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key));
+      await setApiKeyNote(editingApiKeyId, trimmed, noteValue);
+      updateApiKeys(nextKeys);
     }
-    updateApiKeys(nextKeys);
+
     closeModal();
   };
 
@@ -273,56 +316,148 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     setFormError('');
   };
 
+  const handleExportNotes = () => {
+    try {
+      const json = exportApiKeyNotes();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `api-key-notes-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showNotification(t('notification.export_success', { defaultValue: 'Notes exported successfully' }), 'success');
+    } catch (error) {
+      showNotification(t('notification.export_failed', { defaultValue: 'Failed to export notes' }), 'error');
+    }
+  };
+
+  const handleImportNotes = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const rowIds = await ensureStableApiKeyIds();
+        if (rowIds.length !== apiKeys.length) {
+          throw new Error('Failed to resolve stable row IDs');
+        }
+
+        const currentKeysWithIds = apiKeys.map((key, index) => {
+          const rowId = rowIds[index];
+          if (!rowId) {
+            throw new Error('Missing row ID for API key');
+          }
+
+          return {
+            rowId,
+            apiKey: key,
+          };
+        });
+
+        const result = await importApiKeyNotes(text, currentKeysWithIds);
+        setApiKeyIds([...rowIds]);
+
+        if (result.unmatched > 0) {
+          showNotification(
+            t('notification.import_partial', {
+              defaultValue: `Imported ${result.imported} note(s). ${result.unmatched} note(s) could not be matched (keys no longer exist).`,
+              imported: result.imported,
+              unmatched: result.unmatched,
+            }),
+            'warning'
+          );
+        } else {
+          showNotification(
+            t('notification.import_success', {
+              defaultValue: `Imported ${result.imported} note(s) successfully`,
+              count: result.imported,
+            }),
+            'success'
+          );
+        }
+      } catch (error) {
+        showNotification(
+          t('notification.import_failed', { defaultValue: 'Failed to import notes. Invalid file format.' }),
+          'error'
+        );
+      }
+    };
+    input.click();
+  };
+
   return (
     <div className="form-group" style={{ marginBottom: 0 }}>
       <div className={styles.blockHeaderRow}>
         <label style={{ margin: 0 }}>{t('config_management.visual.api_keys.label')}</label>
-        <Button size="sm" onClick={openAddModal} disabled={disabled}>
-          {t('config_management.visual.api_keys.add')}
-        </Button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button size="sm" variant="secondary" onClick={handleExportNotes} disabled={disabled} title="Export notes as backup">
+            Export Notes
+          </Button>
+          <Button size="sm" variant="secondary" onClick={handleImportNotes} disabled={disabled} title="Import notes from backup">
+            Import Notes
+          </Button>
+          <Button size="sm" onClick={openAddModal} disabled={disabled}>
+            {t('config_management.visual.api_keys.add')}
+          </Button>
+        </div>
       </div>
 
       {apiKeys.length === 0 ? (
         <div className={styles.emptyState}>{t('config_management.visual.api_keys.empty')}</div>
       ) : (
         <div className="item-list" style={{ marginTop: 4 }}>
-          {apiKeys.map((key, index) => (
-            <div key={renderApiKeyIds[index] ?? `${key}-${index}`} className="item-row">
-              <div className="item-meta">
-                <div className="pill">#{index + 1}</div>
-                <div className="item-title">
-                  {t('config_management.visual.api_keys.input_label')}
+          {apiKeys.map((key, index) => {
+            const rowId = apiKeyIds[index];
+            const note = rowId ? getApiKeyNote(rowId) : '';
+            return (
+              <div key={rowId ?? `${key}-${index}`} className="item-row">
+                <div className="item-meta">
+                  <div className="pill">#{index + 1}</div>
+                  <div className="item-title">
+                    {note || t('config_management.visual.api_keys.input_label')}
+                  </div>
+                  <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
                 </div>
-                <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
+                <div className="item-actions">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleCopy(key)}
+                    disabled={disabled}
+                  >
+                    {t('common.copy')}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      if (rowId) openEditModal(rowId);
+                    }}
+                    disabled={disabled || !rowId || !hasStableApiKeyIds}
+                  >
+                    {t('config_management.visual.common.edit')}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      if (rowId) handleDelete(rowId);
+                    }}
+                    disabled={disabled || !rowId || !hasStableApiKeyIds}
+                  >
+                    {t('config_management.visual.common.delete')}
+                  </Button>
+                </div>
               </div>
-              <div className="item-actions">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleCopy(key)}
-                  disabled={disabled}
-                >
-                  {t('common.copy')}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => openEditModal(renderApiKeyIds[index] ?? '')}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.edit')}
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDelete(renderApiKeyIds[index] ?? '')}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.delete')}
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -382,6 +517,23 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
               {formError}
             </div>
           )}
+        </div>
+        <div className="form-group">
+          <label htmlFor={`${apiKeyInputId}-note`}>
+            Note / Comment (optional)
+          </label>
+          <input
+            id={`${apiKeyInputId}-note`}
+            className="input"
+            placeholder="e.g., Production API, Testing Project, Client XYZ..."
+            value={noteValue}
+            onChange={(e) => setNoteValue(e.target.value)}
+            disabled={disabled}
+            maxLength={100}
+          />
+          <div className="hint">
+            Add a note to identify this API key (stored locally in your browser)
+          </div>
         </div>
       </Modal>
     </div>
