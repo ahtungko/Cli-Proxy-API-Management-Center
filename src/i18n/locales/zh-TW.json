@@ -943,7 +943,18 @@
     "iflow_cookie_result_expired": "到期時間",
     "iflow_cookie_result_path": "儲存路徑",
     "iflow_cookie_result_type": "類型",
-    "remote_access_disabled": "遠端存取不支援此登入方式，請從本地（localhost）存取"
+    "remote_access_disabled": "遠端存取不支援此登入方式，請從本地（localhost）存取",
+    "freebuff_oauth_title": "Freebuff ??",
+    "freebuff_oauth_button": "?? Freebuff ??",
+    "freebuff_oauth_hint": "?? Freebuff ?? CLI ??????????????????????",
+    "freebuff_oauth_url_label": "?????",
+    "freebuff_open_link": "????",
+    "freebuff_copy_link": "????",
+    "freebuff_oauth_status_waiting": "?????...",
+    "freebuff_oauth_status_success": "?????",
+    "freebuff_oauth_status_error": "?????",
+    "freebuff_oauth_start_error": "?? Freebuff ?????",
+    "freebuff_oauth_polling_error": "?????????"
   },
   "usage_stats": {
     "title": "使用統計",

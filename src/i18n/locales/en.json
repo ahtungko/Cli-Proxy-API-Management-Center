@@ -929,7 +929,18 @@
     "iflow_oauth_status_error": "Authentication failed:",
     "iflow_oauth_start_error": "Failed to start iFlow OAuth:",
     "iflow_oauth_polling_error": "Failed to check authentication status:",
-    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost."
+    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost.",
+    "freebuff_oauth_title": "Freebuff Login",
+    "freebuff_oauth_button": "Start Freebuff Login",
+    "freebuff_oauth_hint": "Login to Freebuff through the official CLI login page and automatically save the auth file when authentication completes.",
+    "freebuff_oauth_url_label": "Login URL:",
+    "freebuff_open_link": "Open Link",
+    "freebuff_copy_link": "Copy Link",
+    "freebuff_oauth_status_waiting": "Waiting for authentication...",
+    "freebuff_oauth_status_success": "Authentication successful!",
+    "freebuff_oauth_status_error": "Authentication failed:",
+    "freebuff_oauth_start_error": "Failed to start Freebuff login:",
+    "freebuff_oauth_polling_error": "Failed to check authentication status:"
   },
   "usage_stats": {
     "title": "Usage Statistics",
