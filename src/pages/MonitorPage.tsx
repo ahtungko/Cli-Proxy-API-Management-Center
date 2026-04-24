@@ -21,7 +21,7 @@ import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useThemeStore } from '@/stores';
 import { usageApi, providersApi, authFilesApi } from '@/services/api';
 import { filterDataByApiFilter, filterDataByTimeRange } from '@/utils/monitor';
-import { buildSourceInfoMap } from '@/utils/sourceResolver';
+import { buildSourceInfoMap, type SourceInfoMap } from '@/utils/sourceResolver';
 import { normalizeAuthIndex } from '@/utils/usage';
 import type { CredentialInfo } from '@/types/sourceInfo';
 import { KpiCards } from '@/components/monitor/KpiCards';
@@ -90,7 +90,10 @@ export function MonitorPage() {
   const [providerMap, setProviderMap] = useState<Record<string, string>>({});
   const [providerModels, setProviderModels] = useState<Record<string, Set<string>>>({});
   const [providerTypeMap, setProviderTypeMap] = useState<Record<string, string>>({});
-  const [sourceInfoMap, setSourceInfoMap] = useState<Map<string, import('@/types/sourceInfo').SourceInfo>>(new Map());
+  const [sourceInfoMap, setSourceInfoMap] = useState<SourceInfoMap>({
+    byAuthIndex: new Map(),
+    bySource: new Map(),
+  });
   const [authFileMap, setAuthFileMap] = useState<Map<string, CredentialInfo>>(new Map());
 
   // 加载渠道名称映射（支持所有提供商类型）

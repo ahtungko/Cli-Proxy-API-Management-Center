@@ -5,8 +5,8 @@ import { Card } from '@/components/ui/Card';
 import { usageApi, authFilesApi } from '@/services/api';
 import { useDisableModel } from '@/hooks';
 import { normalizeUsageSourceId, normalizeAuthIndex } from '@/utils/usage';
-import { resolveSourceDisplay } from '@/utils/sourceResolver';
-import type { SourceInfo, CredentialInfo } from '@/types/sourceInfo';
+import { resolveSourceDisplay, type SourceInfoMap } from '@/utils/sourceResolver';
+import type { CredentialInfo } from '@/types/sourceInfo';
 import { TimeRangeSelector, formatTimeRangeCaption, type TimeRange } from './TimeRangeSelector';
 import { DisableModelModal } from './DisableModelModal';
 import {
@@ -26,7 +26,7 @@ interface RequestLogsProps {
   loading: boolean;
   providerMap: Record<string, string>;
   providerTypeMap: Record<string, string>;
-  sourceInfoMap: Map<string, SourceInfo>;
+  sourceInfoMap: SourceInfoMap;
   authFileMap?: Map<string, CredentialInfo>;
   apiFilter: string;
 }
