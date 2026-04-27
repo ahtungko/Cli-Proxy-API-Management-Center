@@ -5,13 +5,19 @@
   --shell-gutter: 24px;
   --sidebar-panel-width: 240px;
   --sidebar-collapsed-width: 68px;
+  --sidebar-panel-padding-inline: 14px;
+  --sidebar-collapsed-padding-inline: 10px;
+  --sidebar-border-width: 1px;
   --sidebar-active-width: var(--sidebar-panel-width);
+  --sidebar-active-padding-inline: var(--sidebar-panel-padding-inline);
   --sidebar-gap: 32px;
   --floating-control-size: 38px;
+  --sidebar-toggle-size: 44px;
 }
 
 .app-shell {
   --sidebar-active-width: var(--sidebar-panel-width);
+  --sidebar-active-padding-inline: var(--sidebar-panel-padding-inline);
 
   position: relative;
   display: flex;
@@ -24,6 +30,7 @@
 
   &.sidebar-is-collapsed {
     --sidebar-active-width: var(--sidebar-collapsed-width);
+    --sidebar-active-padding-inline: var(--sidebar-collapsed-padding-inline);
   }
 
   @media (max-width: $breakpoint-mobile) {
@@ -71,15 +78,7 @@
 }
 
 .main-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: $spacing-md;
-  padding: $spacing-md $spacing-lg;
-  box-sizing: border-box;
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
-  position: sticky;
+  position: fixed;
   top: 0;
   right: 0;
   left: 0;
@@ -92,9 +91,15 @@
   .sidebar-toggle-floating {
     position: absolute;
     top: var(--shell-gutter);
-    left: calc(var(--shell-gutter) + var(--sidebar-active-width) + 22px);
-    width: 44px;
-    height: 44px;
+    left: calc(
+      var(--shell-gutter) +
+        var(--sidebar-active-width) +
+        (var(--sidebar-active-padding-inline) * 2) +
+        (var(--sidebar-border-width) * 2) -
+        (var(--sidebar-toggle-size) / 2)
+    );
+    width: var(--sidebar-toggle-size);
+    height: var(--sidebar-toggle-size);
     padding: 0;
     border: 1px solid color-mix(in srgb, var(--border-color) 68%, transparent);
     border-radius: 12px;
@@ -383,7 +388,7 @@
   z-index: $z-dropdown - 1;
   width: var(--sidebar-panel-width);
   height: calc(100vh - var(--shell-gutter) - var(--shell-gutter));
-  padding: 18px 14px;
+  padding: 18px var(--sidebar-panel-padding-inline);
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
@@ -392,7 +397,7 @@
   background:
     linear-gradient(180deg, rgb(255 255 255 / 0.035), rgb(255 255 255 / 0)),
     color-mix(in srgb, var(--bg-primary) 72%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+  border: var(--sidebar-border-width) solid color-mix(in srgb, var(--border-color) 72%, transparent);
   border-radius: 18px;
   box-shadow: none;
   --glass-blur: 18px;
@@ -414,7 +419,7 @@
 
   &.collapsed {
     width: var(--sidebar-collapsed-width);
-    padding: 18px 10px;
+    padding: 18px var(--sidebar-collapsed-padding-inline);
 
     .sidebar-brand {
       justify-content: center;
@@ -558,23 +563,14 @@
   }
 
   &.content-logs {
-    overflow-y: auto;
-    overflow-x: hidden;
-
-    @media (max-width: $breakpoint-mobile) {
-      overflow: visible;
-      overflow-y: auto;
-      height: auto;
-    }
+    overflow: hidden;
   }
 }
 
 .main-content {
   flex: 1 0 auto;
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: clamp(12px, 2vw, 24px);
+  min-height: 100%;
+  padding: 70px clamp(20px, 3vw, 48px) 40px;
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
@@ -583,17 +579,7 @@
   &.main-content-logs {
     flex: 1 1 auto;
     min-height: 0;
-    overflow: visible;
-
-    @media (max-width: $breakpoint-mobile) {
-      flex: 0 0 auto;
-      min-height: auto;
-      overflow: visible;
-    }
-  }
-
-  @media (max-width: $breakpoint-mobile) {
-    padding: $spacing-md;
+    overflow: hidden;
   }
 }
 
