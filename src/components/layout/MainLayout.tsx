@@ -14,6 +14,7 @@ import { PageTransition } from '@/components/common/PageTransition';
 import { MainRoutes } from '@/router/MainRoutes';
 import {
   IconActivity,
+  IconChartLine,
   IconSidebarAuthFiles,
   IconSidebarConfig,
   IconSidebarDashboard,
@@ -22,7 +23,6 @@ import {
   IconSidebarProviders,
   IconSidebarQuota,
   IconSidebarSystem,
-  IconSidebarUsage,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import {
@@ -44,7 +44,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   authFiles: <IconSidebarAuthFiles size={18} />,
   oauth: <IconSidebarOauth size={18} />,
   quota: <IconSidebarQuota size={18} />,
-  usage: <IconSidebarUsage size={18} />,
+  usage: <IconChartLine size={18} />,
   config: <IconSidebarConfig size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
@@ -97,6 +97,12 @@ const headerIcons = {
       <path d="M4 7h16" />
       <path d="M4 12h16" />
       <path d="M4 17h16" />
+    </svg>
+  ),
+  close: (
+    <svg {...headerIconProps}>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
     </svg>
   ),
   chevronLeft: (
@@ -496,6 +502,9 @@ export function MainLayout() {
     }
     showNotification(t('notification.data_refreshed'), 'success');
   };
+  const mobileSidebarToggleLabel = sidebarOpen
+    ? t('sidebar.toggle_collapse', { defaultValue: 'Close navigation' })
+    : t('sidebar.toggle_expand', { defaultValue: 'Open navigation' });
 
   return (
     <div className={`app-shell ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
@@ -520,17 +529,20 @@ export function MainLayout() {
           {sidebarCollapsed ? headerIcons.chevronRight : headerIcons.chevronLeft}
         </button>
 
-        <div className="header-actions floating-actions">
+        <div className="mobile-sidebar-actions">
           <Button
             className="mobile-menu-btn"
             variant="ghost"
             size="sm"
             onClick={() => setSidebarOpen((prev) => !prev)}
-            title={t('sidebar.toggle_expand', { defaultValue: 'Open navigation' })}
-            aria-label={t('sidebar.toggle_expand', { defaultValue: 'Open navigation' })}
+            title={mobileSidebarToggleLabel}
+            aria-label={mobileSidebarToggleLabel}
           >
-            {headerIcons.menu}
+            {sidebarOpen ? headerIcons.close : headerIcons.menu}
           </Button>
+        </div>
+
+        <div className="header-actions floating-actions">
           <Button
             variant="ghost"
             size="sm"

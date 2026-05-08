@@ -60,12 +60,7 @@ export type UseAuthFilesDataResult = {
   batchDelete: (names: string[]) => void;
 };
 
-export type UseAuthFilesDataOptions = {
-  refreshKeyStats: () => Promise<void>;
-};
-
-export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFilesDataResult {
-  const { refreshKeyStats } = options;
+export function useAuthFilesData(): UseAuthFilesDataResult {
   const { t } = useTranslation();
   const { showNotification, showConfirmation } = useNotificationStore();
 
@@ -235,7 +230,6 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
             result.failed.length ? 'warning' : 'success'
           );
           await loadFiles();
-          await refreshKeyStats();
         }
 
         if (result.failed.length > 0) {
@@ -250,7 +244,7 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
         event.target.value = '';
       }
     },
-    [loadFiles, refreshKeyStats, showNotification, t]
+    [loadFiles, showNotification, t]
   );
 
   const handleDelete = useCallback(
@@ -488,7 +482,6 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
 
             if (result.deleted > 0) {
               deselectAll();
-              await refreshKeyStats();
             }
 
             if (result.failed.length === 0) {
@@ -519,7 +512,6 @@ export function useAuthFilesData(options: UseAuthFilesDataOptions): UseAuthFiles
     cleaningInvalid401,
     deselectAll,
     files,
-    refreshKeyStats,
     showConfirmation,
     showNotification,
     t,
