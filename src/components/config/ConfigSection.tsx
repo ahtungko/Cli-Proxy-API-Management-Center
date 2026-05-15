@@ -6,14 +6,21 @@ interface ConfigSectionProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> 
   description?: ReactNode;
   indexLabel?: ReactNode;
   icon?: ReactNode;
+  layout?: 'split' | 'stacked';
 }
 
 export const ConfigSection = forwardRef<HTMLElement, PropsWithChildren<ConfigSectionProps>>(
   function ConfigSection(
-    { title, description, indexLabel, icon, className, children, ...rest },
+    { title, description, indexLabel, icon, layout = 'split', className, children, ...rest },
     ref
   ) {
-    const sectionClassName = [styles.section, className].filter(Boolean).join(' ');
+    const sectionClassName = [
+      styles.section,
+      layout === 'stacked' ? styles.sectionStacked : '',
+      className,
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     return (
       <section ref={ref} className={sectionClassName} {...rest}>

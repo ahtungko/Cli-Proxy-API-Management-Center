@@ -22,6 +22,15 @@
   }
 }
 
+.sectionStacked {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+
+  .header {
+    position: static;
+  }
+}
+
 .header {
   position: sticky;
   top: 104px;

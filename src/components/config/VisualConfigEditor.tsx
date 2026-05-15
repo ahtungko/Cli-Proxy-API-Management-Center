@@ -1057,6 +1057,7 @@ export function VisualConfigEditor({
 
           <ConfigSection
             id="payload"
+            layout="stacked"
             ref={(node) => {
               sectionRefs.current.payload = node;
             }}
