@@ -1,6 +1,6 @@
 /**
- * AI 提供商相关类型
- * 基于原项目 src/modules/ai-providers.js
+ * AI provider related types
+ * Based on the original project's src/modules/ai-providers.js
  */
 
 export interface ModelAlias {
@@ -13,8 +13,8 @@ export interface ModelAlias {
 export interface ApiKeyEntry {
   apiKey: string;
   proxyUrl?: string;
-  headers?: Record<string, string>;
   authIndex?: string;
+  headers?: Record<string, string>;
 }
 
 export interface CloakConfig {

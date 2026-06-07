@@ -19,6 +19,7 @@ import {
   getTypeLabel,
   hasAuthFileStatusMessage,
   isRuntimeOnlyAuthFile,
+  normalizeProviderKey,
 } from '@/features/authFiles/constants';
 
 type DeleteAllOptions = {
@@ -313,7 +314,12 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
             } else {
               const filesToDelete = files.filter((file) => {
                 if (isRuntimeOnlyAuthFile(file)) return false;
-                if (isFiltered && file.type !== filter) return false;
+                if (
+                  isFiltered &&
+                  normalizeProviderKey(String(file.type ?? file.provider ?? '')) !== filter
+                ) {
+                  return false;
+                }
                 if (isProblemOnly && !hasAuthFileStatusMessage(file)) return false;
                 if (isDisabledOnly && file.disabled !== true) return false;
                 return true;

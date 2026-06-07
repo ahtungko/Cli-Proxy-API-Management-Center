@@ -3,6 +3,8 @@ import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconCodex from '@/assets/icons/codex.svg';
 import iconGemini from '@/assets/icons/gemini.svg';
+import iconGrok from '@/assets/icons/grok.svg';
+import iconGrokDark from '@/assets/icons/grok-dark.svg';
 import iconIflow from '@/assets/icons/iflow.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
@@ -27,7 +29,8 @@ export type QuotaProviderType =
   | 'claude'
   | 'codex'
   | 'gemini-cli'
-  | 'kimi';
+  | 'kimi'
+  | 'xai';
 
 export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'antigravity',
@@ -35,6 +38,7 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'codex',
   'gemini-cli',
   'kimi',
+  'xai',
 ]);
 
 export const MIN_CARD_PAGE_SIZE = 3;
@@ -45,54 +49,59 @@ export const INTEGER_STRING_PATTERN = /^[+-]?\d+$/;
 export const TRUTHY_TEXT_VALUES = new Set(['true', '1', 'yes', 'y', 'on']);
 export const FALSY_TEXT_VALUES = new Set(['false', '0', 'no', 'n', 'off']);
 
-// 标签类型颜色配置 — 基于各提供商 Logo 品牌色调配，确保彼此不重复
+// Tag color configuration ? tune brand colors from each provider logo so they remain distinct
 export const TYPE_COLORS: Record<string, TypeColorSet> = {
-  // Qwen logo: 紫罗兰渐变 #6336E7 → #6F69F7
+  // Qwen logo: violet gradient #6336E7 ? #6F69F7
   qwen: {
     light: { bg: '#ede5fd', text: '#5530c7' },
     dark: { bg: '#36208a', text: '#b5a3f0' },
   },
-  // Kimi logo: 亮蓝 #027AFF（K字 + 蓝色圆点）
+  // Kimi logo: bright blue #027AFF (K letter + blue dot)
   kimi: {
     light: { bg: '#dce8ff', text: '#0560cf' },
     dark: { bg: '#003880', text: '#70b5ff' },
   },
-  // Gemini logo: 多色蓝 #3186FF（偏柔和的蓝）
+  // Gemini logo: multi-tone blue #3186FF (a softer blue)
   gemini: {
     light: { bg: '#e3f2fd', text: '#1565c0' },
     dark: { bg: '#0d47a1', text: '#64b5f6' },
   },
-  // Gemini-CLI: 同 Gemini 图标，用更深的海军蓝区分
+  // Gemini-CLI: same icon as Gemini, distinguished with a deeper navy blue
   'gemini-cli': {
     light: { bg: '#e0e8ff', text: '#1e4fa3' },
     dark: { bg: '#1c3f73', text: '#a8c7ff' },
   },
-  // AI Studio: 使用 Gemini 图标，中性灰标签
+  // AI Studio: uses the Gemini icon with a neutral gray badge
   aistudio: {
     light: { bg: '#f0f2f5', text: '#2f343c' },
     dark: { bg: '#373c42', text: '#cfd3db' },
   },
-  // Claude logo: 陶土橙 #D97757
+  // Claude logo: terracotta orange #D97757
   claude: {
     light: { bg: '#fbece4', text: '#c05621' },
     dark: { bg: '#5e2c14', text: '#e8a882' },
   },
-  // Codex logo: 靛蓝渐变 #B1A7FF → #3941FF
+  // Codex logo: indigo gradient #B1A7FF ? #3941FF
   codex: {
     light: { bg: '#eae7ff', text: '#3538d4' },
     dark: { bg: '#262395', text: '#b5b0ff' },
   },
-  // Antigravity logo: 多色（主色 #3789F9 蓝 + #53A89A 青绿），用青色区分
+  // Antigravity logo: multicolor (primary #3789F9 blue + #53A89A teal); use cyan to distinguish
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
     dark: { bg: '#004d40', text: '#80deea' },
   },
-  // iFlow logo: 品红紫渐变 #5C5CFF → #AE5CFF，偏品红以区别于 Qwen 的紫罗兰
+  // xAI / Grok: graphite brand treatment, distinct from blue and purple providers
+  xai: {
+    light: { bg: '#f3f4f6', text: '#111827', border: '1px solid #d1d5db' },
+    dark: { bg: '#111827', text: '#f9fafb', border: '1px solid #374151' },
+  },
+  // iFlow logo: magenta-purple gradient #5C5CFF ? #AE5CFF, leaning magenta to stand apart from Qwen's violet
   iflow: {
     light: { bg: '#f5e3fc', text: '#9025c8' },
     dark: { bg: '#521490', text: '#d49cf5' },
   },
-  // Vertex logo: Google 蓝 #4285F4
+  // Vertex logo: Google blue #4285F4
   vertex: {
     light: { bg: '#e4edfd', text: '#2b5fbc' },
     dark: { bg: '#1a3d80', text: '#89b3f7' },
@@ -114,6 +123,7 @@ export const AUTH_FILE_ICONS: Record<string, AuthFileIconAsset> = {
   codex: iconCodex,
   gemini: iconGemini,
   'gemini-cli': iconGemini,
+  xai: { light: iconGrok, dark: iconGrokDark },
   iflow: iconIflow,
   kimi: { light: iconKimiLight, dark: iconKimiDark },
   qwen: iconQwen,
@@ -133,7 +143,11 @@ export const resolveQuotaErrorMessage = (
   return fallback;
 };
 
-export const normalizeProviderKey = (value: string) => value.trim().toLowerCase();
+export const normalizeProviderKey = (value: string) => {
+  const key = value.trim().toLowerCase().replace(/_/g, '-');
+  if (key === 'x-ai' || key === 'grok') return 'xai';
+  return key;
+};
 
 export const getAuthFileStatusMessage = (file: AuthFileItem): string => {
   const raw = file['status_message'] ?? file.statusMessage;
@@ -146,15 +160,16 @@ export const hasAuthFileStatusMessage = (file: AuthFileItem): boolean =>
   getAuthFileStatusMessage(file).length > 0;
 
 export const getTypeLabel = (t: TFunction, type: string): string => {
-  const key = `auth_files.filter_${type}`;
+  const providerKey = normalizeProviderKey(type);
+  const key = `auth_files.filter_${providerKey}`;
   const translated = t(key);
   if (translated !== key) return translated;
-  if (type.toLowerCase() === 'iflow') return 'iFlow';
+  if (providerKey === 'iflow') return 'iFlow';
   return type.charAt(0).toUpperCase() + type.slice(1);
 };
 
 export const getTypeColor = (type: string, resolvedTheme: ResolvedTheme): ThemeColors => {
-  const set = TYPE_COLORS[type] || TYPE_COLORS.unknown;
+  const set = TYPE_COLORS[normalizeProviderKey(type)] || TYPE_COLORS.unknown;
   return resolvedTheme === 'dark' && set.dark ? set.dark : set.light;
 };
 
@@ -213,7 +228,7 @@ export const parseDisableCoolingValue = (value: unknown): boolean | undefined =>
 };
 
 export const readCodexAuthFileWebsockets = (value: Record<string, unknown>): boolean =>
-  parseDisableCoolingValue(value.websockets) ?? false;
+  parseDisableCoolingValue(value.websockets ?? value.websocket) ?? false;
 
 export const applyCodexAuthFileWebsockets = (
   value: Record<string, unknown>,
@@ -239,11 +254,11 @@ export const formatModified = (item: AuthFileItem): string => {
   const date =
     Number.isFinite(asNumber) && !Number.isNaN(asNumber)
       ? new Date(asNumber < 1e12 ? asNumber * 1000 : asNumber)
-      : parseTimestamp(raw) ?? new Date(String(raw));
+      : (parseTimestamp(raw) ?? new Date(String(raw)));
   return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString();
 };
 
-// 检查模型是否被 OAuth 排除
+// Check whether the model is excluded by OAuth
 export const isModelExcluded = (
   modelId: string,
   providerType: string,
@@ -253,7 +268,7 @@ export const isModelExcluded = (
   const excludedModels = excluded[providerKey] || excluded[providerType] || [];
   return excludedModels.some((pattern) => {
     if (pattern.includes('*')) {
-      // 支持通配符匹配：先转义正则特殊字符，再将 * 视为通配符
+      // Support wildcard matching: escape regex metacharacters first, then treat * as a wildcard
       const regexSafePattern = pattern
         .split('*')
         .map((segment) => segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))

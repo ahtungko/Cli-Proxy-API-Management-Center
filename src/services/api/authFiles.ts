@@ -1,5 +1,5 @@
 /**
- * 认证文件与 OAuth 排除模型相关 API
+ * Auth files and OAuth exclusion model related API
  */
 
 import { apiClient } from './client';
@@ -23,6 +23,7 @@ export type AuthFileFieldsPatch = {
   proxy_url?: string;
   headers?: Record<string, string>;
   priority?: number;
+  websockets?: boolean;
   note?: string;
 };
 type AuthFileBatchFailure = { name: string; error: string };
@@ -128,7 +129,6 @@ const deriveSuccessfulFileNames = (
 
   return requestedNames.filter((name) => !failedNames.has(name));
 };
-
 const normalizeBatchUploadResponse = (
   payload: AuthFileBatchUploadResponse | undefined,
   requestedNames: string[]
@@ -619,7 +619,7 @@ export const authFilesApi = {
   saveJsonObject: (name: string, json: Record<string, unknown>) =>
     saveAuthFileText(name, JSON.stringify(json)),
 
-  // OAuth 排除模型
+  // OAuth excluded models
   async getOauthExcludedModels(): Promise<Record<string, string[]>> {
     const data = await apiClient.get('/oauth-excluded-models');
     return normalizeOauthExcludedModels(data);
@@ -634,7 +634,7 @@ export const authFilesApi = {
   replaceOauthExcludedModels: (map: Record<string, string[]>) =>
     apiClient.put('/oauth-excluded-models', normalizeOauthExcludedModels(map)),
 
-  // OAuth 模型别名
+  // OAuth model aliases
   async getOauthModelAlias(): Promise<Record<string, OAuthModelAliasEntry[]>> {
     const data = await apiClient.get(OAUTH_MODEL_ALIAS_ENDPOINT);
     return normalizeOauthModelAlias(data);
@@ -671,7 +671,7 @@ export const authFilesApi = {
     }
   },
 
-  // 获取认证凭证支持的模型
+  // Get models supported by authentication credentials
   async getModelsForAuthFile(
     name: string
   ): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
@@ -684,7 +684,7 @@ export const authFilesApi = {
       : [];
   },
 
-  // 获取指定 channel 的模型定义
+  // Get the model definitions for the specified channel
   async getModelDefinitions(
     channel: string
   ): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {

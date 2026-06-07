@@ -236,7 +236,7 @@ export function MainLayout() {
   const { showNotification } = useNotificationStore();
   const location = useLocation();
 
-  // 全局自动备份：只要管理中心打开即生效，无需停留在备份页面
+  // Global auto backup: it takes effect as soon as the management center opens, with no need to stay on the backup page
   useAutoBackup();
 
   const logout = useAuthStore((state) => state.logout);
@@ -264,7 +264,7 @@ export function MainLayout() {
   const isLogsPage = location.pathname.startsWith('/logs');
   const showSidebarLabels = !sidebarCollapsed || sidebarOpen;
 
-  // 将顶部悬浮控制区高度写入 CSS 变量，供移动端粘性元素和浮层避让。
+  // Write the top floating control height into a CSS variable so mobile sticky elements and overlays can avoid it.
   useLayoutEffect(() => {
     const updateHeaderHeight = () => {
       const height = headerRef.current?.offsetHeight;
@@ -293,7 +293,7 @@ export function MainLayout() {
     };
   }, []);
 
-  // 将主内容区的中心点写入 CSS 变量，供底部浮层（配置面板操作栏、提供商导航）对齐到内容区
+  // Write the main content center point into a CSS variable so bottom overlays (config panel actions, provider navigation) can align with the content area.
   useLayoutEffect(() => {
     const updateContentCenter = () => {
       const el = contentRef.current;
@@ -408,25 +408,107 @@ export function MainLayout() {
 
   useEffect(() => {
     fetchConfig().catch(() => {
-      // ignore initial failure; login flow会提示
+      // Ignore the initial failure; the login flow will surface any issue.
     });
   }, [fetchConfig]);
 
-  const navItems = [
-    { path: '/', label: t('nav.dashboard'), icon: sidebarIcons.dashboard },
-    { path: '/config', label: t('nav.config_management'), icon: sidebarIcons.config },
-    { path: '/ai-providers', label: t('nav.ai_providers'), icon: sidebarIcons.aiProviders },
-    { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
-    { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
-    { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
-    { path: '/usage', label: t('nav.usage_stats'), icon: sidebarIcons.usage },
-    ...(config?.loggingToFile
-      ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
-      : []),
-    { path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system },
-    { path: '/monitor', label: t('nav.monitor'), icon: sidebarIcons.monitor },
-    { path: '/backup', label: t('nav.backup'), icon: sidebarIcons.backup },
+  const navGroups = [
+    {
+      id: 'operate',
+      labelKey: 'nav_groups.operate',
+      items: [
+        {
+          path: '/',
+          labelKey: 'nav.dashboard',
+          metaKey: 'nav_meta.dashboard',
+          icon: sidebarIcons.dashboard,
+        },
+      ],
+    },
+    {
+      id: 'gateway',
+      labelKey: 'nav_groups.gateway',
+      items: [
+        {
+          path: '/ai-providers',
+          labelKey: 'nav.ai_providers',
+          metaKey: 'nav_meta.ai_providers',
+          icon: sidebarIcons.aiProviders,
+        },
+        {
+          path: '/auth-files',
+          labelKey: 'nav.auth_files',
+          metaKey: 'nav_meta.auth_files',
+          icon: sidebarIcons.authFiles,
+        },
+        {
+          path: '/oauth',
+          labelKey: 'nav.oauth',
+          metaKey: 'nav_meta.oauth',
+          icon: sidebarIcons.oauth,
+        },
+      ],
+    },
+    {
+      id: 'observe',
+      labelKey: 'nav_groups.observe',
+      items: [
+        {
+          path: '/quota',
+          labelKey: 'nav.quota_management',
+          metaKey: 'nav_meta.quota_management',
+          icon: sidebarIcons.quota,
+        },
+        {
+          path: '/usage',
+          labelKey: 'nav.usage_stats',
+          metaKey: 'nav_meta.usage_stats',
+          icon: sidebarIcons.usage,
+        },
+        {
+          path: '/monitor',
+          labelKey: 'nav.monitor',
+          metaKey: 'nav_meta.monitor',
+          icon: sidebarIcons.monitor,
+        },
+        ...(config?.loggingToFile
+          ? [
+              {
+                path: '/logs',
+                labelKey: 'nav.logs',
+                metaKey: 'nav_meta.logs',
+                icon: sidebarIcons.logs,
+              },
+            ]
+          : []),
+      ],
+    },
+    {
+      id: 'control',
+      labelKey: 'nav_groups.control',
+      items: [
+        {
+          path: '/config',
+          labelKey: 'nav.config_management',
+          metaKey: 'nav_meta.config_management',
+          icon: sidebarIcons.config,
+        },
+        {
+          path: '/system',
+          labelKey: 'nav.system_info',
+          metaKey: 'nav_meta.system_info',
+          icon: sidebarIcons.system,
+        },
+        {
+          path: '/backup',
+          labelKey: 'nav.backup',
+          metaKey: 'nav_meta.backup',
+          icon: sidebarIcons.backup,
+        },
+      ],
+    },
   ];
+  const navItems = navGroups.flatMap((group) => group.items);
   const navOrder = navItems.map((item) => item.path);
   const getRouteOrder = (pathname: string) => {
     const trimmedPath =
@@ -683,17 +765,32 @@ export function MainLayout() {
           </div>
 
           <div className="nav-section">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => setSidebarOpen(false)}
-                title={showSidebarLabels ? undefined : item.label}
-              >
-                <span className="nav-icon">{item.icon}</span>
-                {showSidebarLabels && <span className="nav-label">{item.label}</span>}
-              </NavLink>
+            {navGroups.map((group, idx) => (
+              <div className="nav-group" key={group.id}>
+                {showSidebarLabels
+                  ? <div className="nav-group-label">{t(group.labelKey)}</div>
+                  : idx > 0 && <div className="nav-group-divider" aria-hidden="true" />}
+                {group.items.map((item) => {
+                  const itemLabel = t(item.labelKey);
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                      onClick={() => setSidebarOpen(false)}
+                      title={showSidebarLabels ? undefined : itemLabel}
+                    >
+                      <span className="nav-icon">{item.icon}</span>
+                      {showSidebarLabels && (
+                        <span className="nav-text">
+                          <span className="nav-label">{itemLabel}</span>
+                          <span className="nav-meta">{t(item.metaKey)}</span>
+                        </span>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </div>
             ))}
           </div>
         </aside>
